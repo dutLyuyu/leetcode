@@ -1,26 +1,113 @@
-Dijkstra算法 
-查并集：
-https://leetcode-cn.com/problems/swim-in-rising-water/
+# 单调栈：
+
+##  84. 柱状图中最大的矩形
+
+![img](./md_pics_archive/84最大矩阵面积.jpg)
 
 
-### 编辑距离（很难想到子问题的动态规划）
-#### 问题定义：
+
+```js
+/**
+ * @param {number[]} heights
+ * @return {number}
+ */
+
+const IncreStack = {
+    val: [],
+    // 空栈栈顶和pop 结果返回undefined
+    top: function(){
+        return this.val[this.val.length - 1];
+    },
+    pop: function(){
+        return this.val.pop();
+    }
+};
+
+var largestRectangleArea = function(heights) {
+    let re = 0;
+
+    // 矩阵后添加一个height为0的矩阵
+    // increStrack 存的是index
+    // 但是单调栈维护 以heights为准
+    // 注意：代码实现的是严格递增
+    const increStack = Object.create(IncreStack);
+    heights.push(0);
+
+    const updateResult = (comingIndex) => {
+        const cur = increStack.pop();
+        // 栈里面前一个数、也就是下一个栈顶
+        // 如果已经是空栈了 这里赋值 -1 是为了
+        // (comingIndex - pre - 1) * heights[cur] 
+        let pre = increStack.top() === undefined ? - 1 : increStack.top();
+        let tmp = (comingIndex - pre - 1) * heights[cur];
+        re = re > tmp ? re : tmp;
+        return pre;
+    };
+
+    increStack.val = [0];
+    for(let i = 1; i < heights.length; i++){
+        let top = increStack.top();
+        while(heights[i] < heights[top]){
+            top = updateResult(i);
+        }
+        if(top === -1 || heights[i] > heights[top]){
+            increStack.val.push(i);
+        }else if(heights[i] === heights[top]){
+            // 注意：如果有相等高度，拿最新的替换掉，
+            increStack.val[increStack.val.length - 1] = i;
+        }
+    }
+    return re;
+};
+
+```
+
+## 42 接雨水 
+给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。
+![example](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/10/22/rainwatertrap.png)
+
+如果可以知道max left 和 max right. 
+计算方法:
+```
+对于每一个柱子 min(max_left, max_right) - height[i]
+```
+
+如果使用单调栈：
+```
+(r - l - 1) (min(height(left),height(right))-height(cur))
+
+这个其实是高度：
+min(height(left),height(right))-height(cur)
+
+这个是长：
+(r - l - 1) 
+```
+
+![img](./md_pics_archive/接雨水.jpg)
+
+
+
+
+
+
+
+
+
+---
+
+# todo :
+
+1. Dijkstra算法 
+2. 查并集：https://leetcode-cn.com/problems/swim-in-rising-water/
+3. dynamic problem : http://poj.org/problem?id=2663
+4.  编辑距离（很难想到子问题的动态规划）
+```
+问题定义：
 我们定义dp[i][j]的含义为：word1的前i个字符和word2的前j个字符的编辑距离。意思就是word1的前i个字符，变成word2的前j个字符，最少需要这么多步。
 
-#### 子问题：
+子问题：
 dp[i][j] = min( dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + int(word1[i] != word2[j]) )
 
-ps: 
-自顶向下不好推
-自底向上：
-![img](./md_pics_archive/edit_distance.png)
-
-##### 我的尝试
-1. 这个问题 从word1到word2的操作 是可逆的  这个想到了
-2. 没能给出问题定义 子问题也没能找出来
-![img](./md_pics_archive/fake_edit_distance.jpg)
-
-##### 正确的思路历程：
 为什么分这三步： 因为猜如果用自底向上的话，一定是两个word的数目都变小，这样的话，他们之间的关系是什么？
 
 0. 
@@ -48,11 +135,11 @@ horse -> ros ? 最大 c+1
 1. base cases
 2. 最优子结构
 3. 最基本的自底向上 寻找子问题的定义和子问题之间的关系
-
-
-### 49. 字母异位词分组
-
 ```
+5. 思维陷阱
+```
+ 49. 字母异位词分组
+
 输入: ["eat", "tea", "tan", "ate", "nat", "bat"]
 输出:
 [
@@ -60,7 +147,6 @@ horse -> ros ? 最大 c+1
   ["nat","tan"],
   ["bat"]
 ]
-```
 
 错误思路：
 ate ->放到categoty这个object里面
@@ -81,59 +167,11 @@ ate ->放到categoty这个object里面
 
 正确：
 排序 / 计数（直接计数的结果编码成可以直接比较的那种 /
-
-### 42 接雨水 
-给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。
-![example](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/10/22/rainwatertrap.png)
-#### 原来错误的计算方法：
-对每个柱子 找到右边最初的比他高的柱子s 中间的都算作barrier
-如果没找到的话 不算入result内
-((s - f - 1) * min(height[s], height[f])) - barrier
-❌：没考虑到即使是左边比右边高 但是中间低的话 也是可以困住水的
-    思维矛盾 min(height[s], height[f])) 找到右边最初的比他高的柱子s
-错误例子3201
-#### 正确的
- 
-如果可以知道max left 和 max right. 
-计算方法:
-```
-对于每一个柱子 min(max_left, max_right) - height[i]
 ```
 
-如果使用单调栈：
-```
-(r - l - 1) (min(height(left),height(right))-height(cur))
-
-这个其实是高度：
-min(height(left),height(right))-height(cur)
-
-这个是长：
-(r - l - 1) 
-```
-
-![img](./md_pics_archive/接雨水.jpg)
 
 
-## dynamic programming
-
-problem wait to solve list :
-这个路径下的pdf
-http://poj.org/problem?id=2663
-
-
-### inspiration and puzzles 
-算法设计与分析基础
-https://web.stanford.edu/class/cs97si/
-
-
-## 单调栈：
-为啥能用单调栈来做呢？我们先来考虑一下，什么情况下可以装下水呢，是不是必须两边高，中间低呢？我们对低洼的地方感兴趣，就可以使用一个单调递减栈，将递减的边界存进去，一旦发现当前的数字大于栈顶元素了，那么就有可能会有能装水的地方产生。此时我们当前的数字是右边界，我们从栈中至少需要有两个数字，才能形成一个坑槽，先取出的那个最小的数字，就是坑槽的最低点，再次取出的数字就是左边界，我们比较左右边界，取其中较小的值为装水的边界，然后此高度减去水槽最低点的高度，乘以左右边界间的距离就是装水量了。由于需要知道左右边界的位置，所以我们虽然维护的是递减栈，但是栈中数字并不是存递减的高度，而是递减的高度的坐标。这应该属于单调栈的高级应用了，可能并不是那么直接就能想出正确的解法。
-
-
-
-
-
-
+---
 
 
 
